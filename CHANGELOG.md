@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.5](https://github.com/orchard-suite/hedge/compare/v0.0.4...v0.0.5) (2026-11-23)
+
+### Bug Fixes
+
+* **hedge:** check only what a post sends ([3955bfa](https://github.com/orchard-suite/hedge/commit/3955bfab24fdc62bed9c0f4965550fbd6e4cec59))
+* **hedge:** confirm the pull request limit holds ([6807665](https://github.com/orchard-suite/hedge/commit/6807665a7cf5b71b0be0e4fb7790bd1d53988d64))
+
 ## [0.0.4](https://github.com/orchard-suite/hedge/compare/v0.0.3...v0.0.4) (2026-11-23)
 
 ### Features
