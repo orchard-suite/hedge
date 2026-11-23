@@ -1,7 +1,7 @@
 {
   "name": "hedge",
   "description": "Keep an estate's own names out of repositories that may not hold them: a hook on every write, edit, and forge post, and a skill for what to do when hedge stops one.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": { "name": "The Orchard authors" },
   "homepage": "https://github.com/orchard-suite/hedge",
   "repository": "https://github.com/orchard-suite/hedge",
