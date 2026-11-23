@@ -316,6 +316,15 @@ func publish(ctx context.Context, args []string, stdout, stderr io.Writer, p reg
 		return 1
 	}
 	fmt.Fprintf(stdout, "hedge: %s is public.\n", name)
+	if c, err := register.LoadConfig(p.Config); err == nil && c.Publish.Contributions == "collaborators" {
+		cmd := exec.CommandContext(ctx, "gh", "api", "-X", "PATCH", "repos/"+name, "-f", "pull_request_creation_policy=collaborators_only", "--silent")
+		cmd.Stderr = stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Fprintln(stderr, "hedge: could not limit pull requests to collaborators:", err)
+			return 1
+		}
+		fmt.Fprintf(stdout, "hedge: only collaborators may open pull requests. The forge sets the same for issues only on its settings page: https://github.com/%s/settings, Issues, Creation allowed by, Collaborators only.\n", name)
+	}
 	return 0
 }
 

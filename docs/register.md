@@ -18,6 +18,8 @@ zones:
       allow: [home]
     - match: git.example.com/acme/register  # one repository
       allow: [home, work]
+publish:
+  contributions: collaborators   # hedge publish lets only collaborators open pull requests
 harvest:
   every: 24h
   dictionary: /usr/share/dict/words

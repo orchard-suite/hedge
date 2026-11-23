@@ -38,6 +38,12 @@ type Config struct {
 			Allow []string `yaml:"allow"`
 		} `yaml:"rules"`
 	} `yaml:"zones"`
+	// Publish is what hedge publish sets on a repository it makes public.
+	Publish struct {
+		// Contributions is "collaborators" to let only collaborators open
+		// pull requests and issues, or empty to leave the forge's default.
+		Contributions string `yaml:"contributions"`
+	} `yaml:"publish"`
 	Harvest struct {
 		// Every is how old the last harvest may be before refresh
 		// harvests again, such as 24h. Empty never harvests on its own.
