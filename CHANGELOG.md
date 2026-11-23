@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.4](https://github.com/orchard-suite/hedge/compare/v0.0.3...v0.0.4) (2026-11-23)
+
+### Features
+
+* **hedge:** set contributions when publishing ([499d780](https://github.com/orchard-suite/hedge/commit/499d7802cab4f6cb5b0c3796f07841d482a08233))
+
 ## [0.0.3](https://github.com/orchard-suite/hedge/compare/v0.0.2...v0.0.3) (2026-11-23)
 
 ### Bug Fixes
