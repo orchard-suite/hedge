@@ -25,6 +25,9 @@ func TestAHarvestKeepsNamesAndDropsWordsNumbersAndTheAllowList(t *testing.T) {
 		"dc03":            false,
 		"k8s-worker-1":    false,
 		"zkimble":         true,
+		"Services":        false,
+		"WebServices":     false,
+		"Billings":        false,
 	} {
 		if got := r.Keep(term, words, allow); got != keep {
 			t.Errorf("Keep(%q) = %v, want %v", term, got, keep)

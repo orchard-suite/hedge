@@ -34,6 +34,11 @@ func gitHook(ctx context.Context, args []string, stdin io.Reader, stderr io.Writ
 		root = cwd
 	}
 	r, _ := repo.Find(root)
+	if r.Key == "" && args[0] != "pre-push" {
+		// A repository with no remote sends nothing anywhere; what it
+		// pushes is checked by the push, in the zone of where it goes.
+		return 0
+	}
 	switch args[0] {
 	case "pre-commit":
 		c := checkerFor(x, r.Key)

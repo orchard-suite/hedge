@@ -176,6 +176,20 @@ func Key(term string, exact bool) (key []byte, parts, spaces int) {
 	return key, len(ps), spaces
 }
 
+// Words are a text's parts in lower case, as a term is matched by them.
+func Words(text string) []string {
+	b := []byte(text)
+	var out []string
+	for _, p := range cut(b, nil) {
+		w := make([]byte, 0, p.end-p.start)
+		for k := p.start; k < p.end; k++ {
+			w = append(w, lower(b[k]))
+		}
+		out = append(out, string(w))
+	}
+	return out
+}
+
 // Hash is the hash of a stored key.
 func Hash(key []byte, exact bool) uint64 {
 	seed := byte(seedLower)

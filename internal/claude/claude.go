@@ -70,8 +70,10 @@ func write(in Input, x *match.Index, indexErr error) Decision {
 		p = filepath.Join(in.Cwd, p)
 	}
 	r, ok := repo.Find(p)
-	if !ok {
-		return Decision{} // outside every repository: nothing to guard
+	if !ok || r.Key == "" {
+		// Outside every repository, or in one with no remote: nothing
+		// leaves it but by a push, which is checked where it goes.
+		return Decision{}
 	}
 	rel, _ := filepath.Rel(r.Root, p)
 	rel = filepath.ToSlash(rel)

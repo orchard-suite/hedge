@@ -309,9 +309,7 @@ func (r *Register) Keep(term string, words map[string]bool, allow map[string]boo
 	// A term of one plain word, or of plain words only, is dropped: it
 	// would flag ordinary prose.
 	plain := true
-	for _, w := range strings.FieldsFunc(strings.ToLower(term), func(c rune) bool {
-		return !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9')
-	}) {
+	for _, w := range match.Words(term) {
 		if !common(w, words, allow) {
 			plain = false
 			break
@@ -320,11 +318,21 @@ func (r *Register) Keep(term string, words map[string]bool, allow map[string]boo
 	return !plain
 }
 
-// common is a dictionary or allow-list word, or one followed by digits
-// ("file0"), or a short code.
+// common is a dictionary or allow-list word, its plural, one followed by
+// digits ("file0"), or a short code.
 func common(w string, words, allow map[string]bool) bool {
 	if words[w] || allow[w] || shortCode(w) {
 		return true
+	}
+	for _, suffix := range []string{"s", "es", "ies"} {
+		if stem, ok := strings.CutSuffix(w, suffix); ok && stem != "" {
+			if suffix == "ies" {
+				stem += "y"
+			}
+			if words[stem] || allow[stem] {
+				return true
+			}
+		}
 	}
 	stem := strings.TrimRight(w, "0123456789")
 	return stem != w && stem != "" && (words[stem] || allow[stem])

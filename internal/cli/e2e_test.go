@@ -150,6 +150,20 @@ func TestACommitInANeutralRepositoryMayNameNoEstate(t *testing.T) {
 	}
 }
 
+func TestARepositoryWithNoRemoteIsCheckedWhenItPushes(t *testing.T) {
+	e := setup(t)
+	d := filepath.Join(e.dir, "scratch")
+	e.git(e.dir, "init", "--quiet", d)
+	if out, err := e.commit(d, "a.md", "zorblax\n", "feat: a"); err != nil {
+		t.Fatalf("a commit with no remote was stopped:\n%s", out)
+	}
+	bare := filepath.Join(e.dir, "out.git")
+	e.git(e.dir, "init", "--quiet", "--bare", bare)
+	if _, err := e.run(d, "git", "push", "--quiet", bare, "main"); err == nil {
+		t.Fatal("its push was not stopped")
+	}
+}
+
 func TestTheOwnersNameMayAppearInCreditsOnly(t *testing.T) {
 	e := setup(t)
 	d := e.repo("tool", "git@github.com:acme-tools/tool.git")
