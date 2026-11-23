@@ -1,0 +1,100 @@
+name: Build
+
+# The release calls this with the new tag, such as v0.1.0. It builds hedge
+# for each platform and publishes it twice: as the release's assets, and as
+# one signed OCI artifact, ghcr.io/orchard-suite/hedge:cli-<version>, one
+# layer a file, signed with cosign keyless as this workflow's identity, so a
+# machine or an estate's forge can verify it and install it with no GitHub
+# credential.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  IMAGE: ghcr.io/orchard-suite/hedge
+
+jobs:
+  program:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Check the tag matches VERSION
+        id: version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          version=$(cat VERSION)
+          if [ "v$version" != "$TAG" ]; then
+            echo "Tag $TAG does not match VERSION $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Build
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+          mkdir -p dist
+          for target in darwin/arm64 darwin/amd64 linux/amd64 linux/arm64; do
+            os=${target%/*}; arch=${target#*/}
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath \
+              -ldflags "-s -w -X github.com/orchard-suite/hedge/internal/cli.Version=${VERSION}" \
+              -o "dist/hedge-$os-$arch" ./cmd/hedge
+          done
+          (cd dist && sha256sum hedge-* > SHA256SUMS && cat SHA256SUMS)
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: |
+            dist/hedge-*
+            dist/SHA256SUMS
+      - uses: oras-project/setup-oras@v1
+      - uses: sigstore/cosign-installer@v3
+      - name: Push hedge as an OCI artifact
+        id: push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          echo "$TOKEN" | oras login ghcr.io -u "${{ github.actor }}" --password-stdin
+          cd dist
+          oras push "${IMAGE}:cli-${VERSION}" \
+            --artifact-type application/vnd.orchard-suite.hedge.v1 \
+            --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "org.opencontainers.image.version=${VERSION}" \
+            --format go-template='{{.digest}}' \
+            hedge-darwin-arm64:application/octet-stream \
+            hedge-darwin-amd64:application/octet-stream \
+            hedge-linux-amd64:application/octet-stream \
+            hedge-linux-arm64:application/octet-stream \
+            SHA256SUMS:text/plain > ../digest.txt
+          echo "digest=$(cat ../digest.txt)" >> "$GITHUB_OUTPUT"
+      # Sign by digest, never by tag: a tag can move.
+      - name: Sign and verify hedge
+        env:
+          REF: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+        run: |
+          cosign sign --yes "$REF"
+          cosign verify "$REF" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github.com/${{ github.repository }}/' > /dev/null

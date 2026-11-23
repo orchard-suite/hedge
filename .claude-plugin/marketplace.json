@@ -1,0 +1,13 @@
+{
+  "name": "hedge",
+  "owner": { "name": "orchard-suite" },
+  "description": "hedge: keep an estate's own names out of repositories that may not hold them.",
+  "plugins": [
+    {
+      "name": "hedge",
+      "description": "A hook on every write, edit, and forge post, and a skill for when hedge stops one.",
+      "source": "./",
+      "category": "security"
+    }
+  ]
+}
