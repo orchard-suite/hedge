@@ -149,6 +149,8 @@ func TestAForgePostIsCheckedInTheZoneOfItsRepository(t *testing.T) {
 		`gh issue create -R acme-home/house --title "the zorblax box"`:    true,
 		`gh issue create --title "a clean title" --body "nothing to see"`: false,
 		`gh issue list`: false,
+		`GH_TOKEN="$(fetch-token --vault zorblax)" gh api -X PATCH repos/acme-tools/tool -f has_wiki=false`: false,
+		`gh issue create --title "x" --body "$(cat notes) zorblax"`:                                         true,
 	} {
 		d := Decide(call("Bash", tool, map[string]any{"command": cmd}), x, nil)
 		if d.Block != block {
