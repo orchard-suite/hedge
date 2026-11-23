@@ -129,7 +129,9 @@ func forgePost(in Input, w []string, x *match.Index, indexErr error) Decision {
 	}
 	c := zoneChecker(x, repo.Repo{Key: key})
 	var fs []check.Finding
-	fs = c.Text("body", "", "", []byte(strings.Join(w, " ")), 1, fs)
+	// What is posted is the gh command's own words, less any command
+	// substitution: a token fetched with $(...) is not posted.
+	fs = c.Text("body", "", "", []byte(withoutSubstitutions(strings.Join(w[gh:], " "))), 1, fs)
 	for i := gh; i < len(w); i++ {
 		v := w[i]
 		file := ""
@@ -157,6 +159,25 @@ func forgePost(in Input, w []string, x *match.Index, indexErr error) Decision {
 		return Decision{}
 	}
 	return Decision{Block: true, Reason: reason(c, fs, "This post to "+key)}
+}
+
+// withoutSubstitutions drops each $(...) from s.
+func withoutSubstitutions(s string) string {
+	var b strings.Builder
+	depth := 0
+	for i := 0; i < len(s); i++ {
+		switch {
+		case depth == 0 && s[i] == '$' && i+1 < len(s) && s[i+1] == '(':
+			depth, i = 1, i+1
+		case depth > 0 && s[i] == '(':
+			depth++
+		case depth > 0 && s[i] == ')':
+			depth--
+		case depth == 0:
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
 }
 
 // segments cuts a command line into simple commands, each a list of
