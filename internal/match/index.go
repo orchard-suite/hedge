@@ -22,7 +22,7 @@ import (
 
 const (
 	magic      = "HEDGEIX1"
-	version    = 1
+	version    = 2
 	headerSize = 112
 	termSize   = 16
 	slotSize   = 16
@@ -31,7 +31,8 @@ const (
 	catSize    = 8
 	zoneSize   = 8
 
-	flagExact = 1
+	flagExact  = 1
+	flagGapped = 2
 
 	// MaxCategories is how many categories an index can hold: a set of
 	// them is one byte.
@@ -103,13 +104,14 @@ func Build(s Spec) ([]byte, error) {
 	type entry struct {
 		key, text   []byte
 		exact       bool
+		gapped      bool
 		cats        uint8
 		parts, gaps int
 	}
 	var entries []*entry
 	byKey := map[string]*entry{}
 	for _, t := range s.Terms {
-		key, parts, spaces := Key(t.Text, t.Exact)
+		key, parts, spaces, gapped := key4(t.Text, t.Exact)
 		if len(key) == 0 || parts > maxParts {
 			continue
 		}
@@ -122,9 +124,10 @@ func Build(s Spec) ([]byte, error) {
 			if spaces > e.gaps {
 				e.gaps = spaces
 			}
+			e.gapped = e.gapped || gapped
 			continue
 		}
-		e := &entry{key: key, text: []byte(t.Text), exact: t.Exact, cats: t.Cats, parts: parts, gaps: spaces}
+		e := &entry{key: key, text: []byte(t.Text), exact: t.Exact, gapped: gapped, cats: t.Cats, parts: parts, gaps: spaces}
 		byKey[id] = e
 		entries = append(entries, e)
 	}
@@ -154,7 +157,10 @@ func Build(s Spec) ([]byte, error) {
 		binary.LittleEndian.PutUint16(r[4:], kl)
 		r[6] = e.cats
 		if e.exact {
-			r[7] = flagExact
+			r[7] |= flagExact
+		}
+		if e.gapped {
+			r[7] |= flagGapped
 		}
 		binary.LittleEndian.PutUint32(r[8:], do)
 		binary.LittleEndian.PutUint16(r[12:], dl)
@@ -432,7 +438,7 @@ func (x *Index) ID(term int) string {
 	key := x.str(binary.LittleEndian.Uint32(r[0:]), int(binary.LittleEndian.Uint16(r[4:])))
 	h := sha256.New()
 	h.Write(x.salt())
-	h.Write([]byte{r[7]})
+	h.Write([]byte{r[7] & flagExact})
 	h.Write(key)
 	return "hedge-" + hex.EncodeToString(h.Sum(nil)[:6])
 }

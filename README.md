@@ -51,8 +51,10 @@ that.
 
 A term matches whole word parts: "acme" is found in "AcmeWidget",
 "acme-widget", and "acme_widget", and not in "acmes". A term with a space
-matches across spaces; one without never does, so "nova line" is not
-"novaline". A term may be exact case, for a short code. An encoded blob, a
+or punctuation of its own matches across spaces and punctuation; a term
+with neither matches across camel case only, so "nova line", "nova-line",
+and the code `nova.Line()` are not "novaline", while "NovaLine" is. To
+catch a name however it is written, register it as a phrase: "Nova Line". A term may be exact case, for a short code. An encoded blob, a
 lock file, and a binary file hold no words. A register's IPv4 networks
 match any address in them.
 

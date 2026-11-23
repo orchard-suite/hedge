@@ -24,6 +24,9 @@ type part struct {
 	// broken is true when the gap before this part is too wide for a term
 	// to span it.
 	broken bool
+	// joined is true when this part was cut from the same word as the one
+	// before it, at a camel-case boundary, with no gap between them.
+	joined bool
 }
 
 // maxGap is the widest gap, in bytes, a term may span between two parts.
@@ -126,12 +129,12 @@ func cut(text []byte, ps []part) []part {
 			split := isLower(a) && isUpper(b) ||
 				(isUpper(a) || isDigit(a)) && isUpper(b) && k+1 < j && isLower(text[k+1])
 			if split {
-				ps = append(ps, part{start: s, end: k, spaced: gapSpaced, broken: gapBroken})
+				ps = append(ps, part{start: s, end: k, spaced: gapSpaced, broken: gapBroken, joined: s > i})
 				gapSpaced, gapBroken = false, false
 				s = k
 			}
 		}
-		ps = append(ps, part{start: s, end: j, spaced: gapSpaced, broken: gapBroken})
+		ps = append(ps, part{start: s, end: j, spaced: gapSpaced, broken: gapBroken, joined: s > i})
 		prevEnd = j
 		i = j
 	}
@@ -159,11 +162,23 @@ func hashByte(h uint64, c byte) uint64 {
 // lower case unless exact. It also says how many parts the term has and
 // how many of its gaps are whitespace.
 func Key(term string, exact bool) (key []byte, parts, spaces int) {
+	key, parts, spaces, _ = key4(term, exact)
+	return key, parts, spaces
+}
+
+// key4 is Key, and whether the term has a gap of its own (punctuation or
+// whitespace between two of its parts). A term with none, such as
+// "acmeprime" or "AcmePrime", matches across camel-case joins only: never
+// across the dot in "acme.Prime".
+func key4(term string, exact bool) (key []byte, parts, spaces int, gapped bool) {
 	text := []byte(term)
 	ps := cut(text, nil)
 	for i, p := range ps {
 		if i > 0 && p.spaced {
 			spaces++
+		}
+		if i > 0 && !p.joined {
+			gapped = true
 		}
 		for k := p.start; k < p.end; k++ {
 			c := text[k]
@@ -173,7 +188,7 @@ func Key(term string, exact bool) (key []byte, parts, spaces int) {
 			key = append(key, c)
 		}
 	}
-	return key, len(ps), spaces
+	return key, len(ps), spaces, gapped
 }
 
 // Words are a text's parts in lower case, as a term is matched by them.

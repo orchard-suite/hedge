@@ -71,7 +71,7 @@ func TestATermIsFoundAsWholeParts(t *testing.T) {
 			t.Errorf("%q: found %q, want %q", text, got, want)
 		}
 	}
-	for _, text := range []string{"zorblaxes", "azorblax", "vs9", "qx is lower case", "Qx"} {
+	for _, text := range []string{"zorblaxes", "azorblax", "vs9", "qx is lower case", "Qx", "zorb.Lax(x)", "zorb_lax"} {
 		if got := found(x, text, 0); len(got) != 0 {
 			t.Errorf("%q: found %q, want nothing", text, got)
 		}
@@ -108,7 +108,9 @@ func TestAPhraseSpansSpacesButAWordDoesNot(t *testing.T) {
 	if got := found(x, "acme\n\n\n\nwidget", 0); len(got) != 0 {
 		t.Errorf("a gap wider than %d bytes still matched: %q", maxGap, got)
 	}
-	for text, n := range map[string]int{"nova line": 0, "nova-line": 1, "NovaLine": 1} {
+	// A term with no gap of its own spans camel case only; a phrase spans
+	// punctuation too.
+	for text, n := range map[string]int{"nova line": 0, "nova-line": 0, "nova.Line": 0, "NovaLine": 1, "acme-widget": 1} {
 		if got := found(x, text, 0); len(got) != n {
 			t.Errorf("%q: found %q, want %d", text, got, n)
 		}

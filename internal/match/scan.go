@@ -51,7 +51,7 @@ func (s *Scanner) Scan(text []byte, allow uint8, hits []Hit) []Hit {
 			hl, he := hashStart(seedLower), hashStart(seedExact)
 			lowAlive, exactAlive := true, true
 			s.low, s.exact = s.low[:0], s.exact[:0]
-			crossings := 0
+			crossings, gaps := 0, 0
 			for j := i; j < len(ps) && j-i < most; j++ {
 				p := ps[j]
 				if j > i {
@@ -60,6 +60,9 @@ func (s *Scanner) Scan(text []byte, allow uint8, hits []Hit) []Hit {
 					}
 					if p.spaced {
 						crossings++
+					}
+					if !p.joined {
+						gaps++
 					}
 				}
 				for k := p.start; k < p.end; k++ {
@@ -78,7 +81,7 @@ func (s *Scanner) Scan(text []byte, allow uint8, hits []Hit) []Hit {
 					h := nonzero(hl)
 					if x.isPrefix(h) {
 						if t := x.lookup(h); t >= 0 {
-							hits = s.accept(hits, t, false, s.low, crossings, allow, ps[i].start, p.end)
+							hits = s.accept(hits, t, false, s.low, crossings, gaps, allow, ps[i].start, p.end)
 						}
 					} else {
 						lowAlive = false
@@ -88,7 +91,7 @@ func (s *Scanner) Scan(text []byte, allow uint8, hits []Hit) []Hit {
 					h := nonzero(he)
 					if x.isPrefix(h) {
 						if t := x.lookup(h); t >= 0 {
-							hits = s.accept(hits, t, true, s.exact, crossings, allow, ps[i].start, p.end)
+							hits = s.accept(hits, t, true, s.exact, crossings, gaps, allow, ps[i].start, p.end)
 						}
 					} else {
 						exactAlive = false
@@ -106,9 +109,9 @@ func (s *Scanner) Scan(text []byte, allow uint8, hits []Hit) []Hit {
 	return hits
 }
 
-func (s *Scanner) accept(hits []Hit, t int, exact bool, key []byte, crossings int, allow uint8, start, end int) []Hit {
+func (s *Scanner) accept(hits []Hit, t int, exact bool, key []byte, crossings, gaps int, allow uint8, start, end int) []Hit {
 	r := s.x.terms[t*termSize:]
-	if (r[7]&flagExact != 0) != exact || int(r[14]) < crossings {
+	if (r[7]&flagExact != 0) != exact || int(r[14]) < crossings || gaps > 0 && r[7]&flagGapped == 0 {
 		return hits
 	}
 	cats := r[6]
