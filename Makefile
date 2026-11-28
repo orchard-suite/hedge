@@ -24,5 +24,7 @@ check:
 bench:
 	go test -run x -bench . -benchmem ./internal/match
 
-land: check
+# release-damnit runs the config's check on the tree that lands and signs
+# its proof. From a worktree: make land BRANCH=<branch>.
+land:
 	release-damnit land $(BRANCH)
